@@ -1,0 +1,14 @@
+[package]
+name = "synmap"
+version = "0.1.0"
+authors = ["Nika Layzell <nika@thelayzells.com>"]
+
+[dependencies]
+syn = { git = "https://github.com/dtolnay/syn", features = ["full", "fold"] }
+synom = { git = "https://github.com/dtolnay/syn" }
+proc-macro2 = "0.1"
+mitochondria = "1.1"
+literalext = "0.1"
+
+[patch.crates-io]
+proc-macro2 = { path = "../proc-macro2" }
