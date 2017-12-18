@@ -3,6 +3,8 @@ extern crate synom;
 extern crate proc_macro2;
 extern crate mitochondria;
 extern crate literalext;
+#[macro_use]
+extern crate failure;
 
 use std::collections::HashMap;
 use std::cell::RefCell;
@@ -31,12 +33,34 @@ macro_rules! try_opt {
     }
 }
 
-// XXX(nika): Use failure here instead?
 #[derive(Debug)]
 pub enum Error {
     Parse(ParseError),
     Io(IoError),
     WhileParsing(PathBuf, Box<Error>),
+}
+
+// NOTE: Due to limitations in the Failure procedural macro, we can't derive
+// fail on this error currently. This will be supported in the future if/when
+// https://github.com/withoutboats/failure_derive/pull/6 is merged.
+impl failure::Fail for Error {
+    fn cause(&self) -> Option<&failure::Fail> {
+        match *self {
+            Error::Parse(ref r) => Some(r),
+            Error::Io(ref r) => Some(r),
+            Error::WhileParsing(_, ref r) => Some(&**r),
+        }
+    }
+}
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::Parse(ref r) => write!(f, "Parse error: {}", r),
+            Error::Io(ref r) => write!(f, "IO error: {}", r),
+            Error::WhileParsing(ref path, ref r) =>
+                write!(f, "Error while parsing {}: {}", path.display(), r),
+        }
+    }
 }
 
 impl From<ParseError> for Error {
@@ -53,29 +77,6 @@ impl From<proc_macro2::LexError> for Error {
     fn from(e: proc_macro2::LexError) -> Self {
         Error::Parse(e.into())
     }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Error::Parse(ref e) => {
-                write!(f, "Parse Error: ")?;
-                e.fmt(f)
-            }
-            Error::Io(ref e) => {
-                write!(f, "IO Error: ")?;
-                e.fmt(f)
-            }
-            Error::WhileParsing(ref pb, ref cause) => {
-                write!(f, "Error while parsing {}: ", pb.display())?;
-                cause.fmt(f)
-            }
-        }
-    }
-}
-
-impl std::error::Error for Error {
-    fn description(&self) -> &str { "" }
 }
 
 struct FileInfo {

@@ -9,6 +9,7 @@ synom = { git = "https://github.com/dtolnay/syn" }
 proc-macro2 = "0.1"
 mitochondria = "1.1"
 literalext = "0.1"
+failure = "0.1"
 
 [patch.crates-io]
 proc-macro2 = { path = "../proc-macro2" }
